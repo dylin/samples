@@ -39,12 +39,22 @@
 
     <h1><a href="//webrtc.github.io/samples/" title="WebRTC samples homepage">WebRTC samples</a> <span>Peer connection</span></h1>
 
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
+    <label for="pc1_video_container">PC1</label>
+    <div id="pc1_video_container" class="video-container">
+      <video id="pc1-localVideo" class="local-video" autoplay muted></video>
+      <video id="pc1-remoteVideo" class="remote-video" autoplay autoplay></video>
+    </div>
+
+    <label for="pc2_video_container">PC2</label>
+    <div id="pc2_video_container" class="video-container">
+      <video id="pc2-localVideo" class="local-video" autoplay muted></video>
+      <video id="pc2-remoteVideo" class="remote-video" autoplay></video>
+    </div>
 
     <div>
       <button id="startButton">Start</button>
       <button id="callButton">Call</button>
+      <button id="pc2VideoButton">PC2 Video</button>
       <button id="hangupButton">Hang Up</button>
     </div>
 
