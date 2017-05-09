@@ -272,10 +272,10 @@ function startPC2Video() {
   pc2VideoButton.disabled = true;
   var pc2VideoConstraint = {
         audio: { 
-          deviceId: "8620bb8c0696c2d00a98942c0daf12b9d67f3b2cbe28935ad821546dc35274e4"
+          deviceId: "a9dbf2cdf04f416fb4893a0832e32c04de08821e0a49b3801cf10e7400d286fe"
         },
         video: {
-          deviceId: "d908772b8f452e648580187544209535e73d5e24411f698b5ca8b9e025141db5"
+          deviceId: "ab4f9798fbfbbe0d311a4f43ff5e017a3346d294130fde8724abc11b1e3815b4"
         },
   };
   navigator.mediaDevices.getUserMedia(pc2VideoConstraint)
