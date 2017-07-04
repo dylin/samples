@@ -78,6 +78,46 @@ var offerOptions = {
   offerToReceiveAudio: 1,
   offerToReceiveVideo: 1
 };
+var mediaDevices = {
+    pc1: {
+        audio: 'default',
+        video: 'default',
+    },
+    pc2: {
+        audio: 'default',
+        video: 'default',
+   },
+};
+function setDevices() {
+    navigator.mediaDevices.enumerateDevices().then(function(devices) {
+        devices.forEach(function(device) {
+            if (device.kind === 'audioinput') {
+                switch(device.label) {
+                    case 'HUE HD Camera':
+                        mediaDevices.pc1.audio = device.deviceId;
+                    break;
+                    case 'Unknown USB Audio Device':
+                        mediaDevices.pc2.audio = device.deviceId;
+                    break;
+                    default: break;
+                }
+            } else if (device.kind === 'videoinput') {
+                switch(device.label) {
+                    case 'HUE HD Camera (0c45:6341)':
+                        mediaDevices.pc1.video = device.deviceId;
+                    break;
+                    case 'USB Camera (046d:0825)':
+                        mediaDevices.pc2.video = device.deviceId;
+                    break;
+                    default: break;
+                }
+
+            }
+        });
+    }).catch(function(e) {console.error("Error: ", e);});
+}
+
+setDevices();
 
 function getName(pc) {
   return (pc === pc1) ? 'pc1' : 'pc2';
@@ -96,9 +136,21 @@ function gotPC1Stream(stream) {
 
 function gotPC2Stream(stream) {
   trace('Received pc2 local stream');
-  pc2LocalVideo.srcObject = stream;
-  pc2LocalStream = stream;
-  pc2.addStream(stream);
+  if (pc2LocalVideo.srcObject) {
+    var currentLocalStream = pc2LocalVideo.srcObject;
+    if (stream.getVideoTracks().length > 0) {
+      if (currentLocalStream.getVideoTracks().length > 0) {
+        currentLocalStream.removeTrack(currentLocalStream.getVideoTracks()[0]);
+        pc2.remveStream(pc2.getLocalStreams()[0]);
+        pc2.addStream(currentLocalStream);
+      }
+      currentLocalStream.addTrack(stream.getVideoTracks()[0]);
+    }
+  } else {
+    pc2LocalVideo.srcObject = stream;
+    pc2LocalStream = stream;
+    pc2.addStream(stream);
+  }
 }
 
 
@@ -106,8 +158,8 @@ function start() {
   trace('Requesting pc1 local stream');
   startButton.disabled = true;
   navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: true
+    audio: {deviceId: mediaDevices.pc1.audio},
+    video:{deviceId: mediaDevices.pc1.audio}
   })
   .then(gotPC1Stream)
   .catch(function(e) {
@@ -177,25 +229,43 @@ function onCreateOfferSuccess(desc, pc) {
     },
     onSetSessionDescriptionError
   );
-  trace(getOtherPc(pc) + ' setRemoteDescription start');
+  trace(getName(getOtherPc(pc)) + ' setRemoteDescription start');
   getOtherPc(pc).setRemoteDescription(desc).then(
     function() {
       onSetRemoteSuccess(getOtherPc(pc));
     },
     onSetSessionDescriptionError
   );
-  trace(getOtherPc(pc) + ' createAnswer start');
+  trace(getName(getOtherPc(pc)) + ' createAnswer start');
   // Since the 'remote' side has no media stream we need
   // to pass in the right constraints in order for it to
   // accept the incoming offer of audio and video.
-  if (pc == pc1) {
-    getOtherPc(pc).createAnswer().then(
+  // if (pc == pc1) {
+    var otherPC = getOtherPc(pc);
+    var pc2VideoConstraint = {
+        audio: { 
+            deviceId: mediaDevices.pc2.audio,
+        },
+        /*
+        video: {
+            deviceId: mediaDevices.pc2.video
+        }
+        */
+        video: false,
+    };
+    trace('Requesting pc2 local stream');
+    navigator.mediaDevices.getUserMedia(pc2VideoConstraint)
+    .then(gotPC2Stream)
+    .then(function() {
+      return otherPC.createAnswer(offerOptions);
+    })
+    .then(
       function(desc) {
         onCreateAnswerSuccess(desc, getOtherPc(pc));
       },
       onCreateSessionDescriptionError
     );
-  }
+  // }
 }
 
 function onSetLocalSuccess(pc) {
@@ -229,7 +299,7 @@ function onCreateAnswerSuccess(desc, pc) {
     },
     onSetSessionDescriptionError
   );
-  trace(getOtherPc(pc) + ' setRemoteDescription start');
+  trace(getName(getOtherPc(pc)) + ' setRemoteDescription start');
   getOtherPc(pc).setRemoteDescription(desc).then(
     function() {
       onSetRemoteSuccess(getOtherPc(pc));
@@ -271,11 +341,9 @@ function startPC2Video() {
   trace('Requesting pc2 local stream');
   pc2VideoButton.disabled = true;
   var pc2VideoConstraint = {
-        audio: { 
-          deviceId: "a9dbf2cdf04f416fb4893a0832e32c04de08821e0a49b3801cf10e7400d286fe"
-        },
+        audio: false,
         video: {
-          deviceId: "ab4f9798fbfbbe0d311a4f43ff5e017a3346d294130fde8724abc11b1e3815b4"
+          deviceId: mediaDevices.pc2.video,
         },
   };
   navigator.mediaDevices.getUserMedia(pc2VideoConstraint)
